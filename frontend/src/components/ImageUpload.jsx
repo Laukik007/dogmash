@@ -63,6 +63,30 @@ const ImageUpload = () => {
   const [passError, setPassError] = useState("");
   const [verifying, setVerifying] = useState(false);
 
+  // Admin Analytics Modal state
+  const [analyticsOpen, setAnalyticsOpen] = useState(false);
+  const [analyticsData, setAnalyticsData] = useState({ sessions: [], candidateMap: {} });
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+
+  const fetchAnalytics = async () => {
+    setAnalyticsLoading(true);
+    try {
+      const res = await axios.get("/admin/sessions", {
+        headers: { "x-admin-password": adminPassword },
+      });
+      if (res.data?.success) {
+        setAnalyticsData({
+          sessions: res.data.sessions || [],
+          candidateMap: res.data.candidateMap || {},
+        });
+      }
+    } catch (err) {
+      console.error("Failed to load analytics:", err);
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  };
+
   // Admin Reset Ratings state
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [resetting, setResetting] = useState(false);
