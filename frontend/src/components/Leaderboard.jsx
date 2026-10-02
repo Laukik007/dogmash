@@ -127,7 +127,7 @@ function Leaderboard() {
                   },
                 }}
               >
-                <LeaderboardItemImage url={obj.url || obj.thumbnail} name={obj.Name} />
+                <LeaderboardItemImage url={obj.thumbnail || obj.url} name={obj.Name} />
                 <CardContent>
                   <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <Typography variant="h6" sx={{ fontWeight: "bold", fontSize: "1.1rem" }} noWrap>
