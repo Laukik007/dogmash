@@ -8,7 +8,8 @@ const dogSchema = mongoose.Schema(
     },
     Owner: {
       type: String,
-      required: true,
+      required: false,
+      default: "",
     },
     url: {
       type: String,
@@ -21,6 +22,10 @@ const dogSchema = mongoose.Schema(
     Rating: {
       type: Number,
       default: 1500,
+    },
+    matchesPlayed: {
+      type: Number,
+      default: 0,
     },
   },
   {

@@ -12,10 +12,9 @@ export const getCroppedImg = async (imageSrc, crop) => {
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
 
-  /* setting canvas width & height allows us to 
-    resize from the original image resolution */
-  canvas.width = 250;
-  canvas.height = 250;
+  /* setting canvas width & height to 600x600 allows crisp resolution */
+  canvas.width = 600;
+  canvas.height = 600;
 
   ctx.drawImage(
     image,

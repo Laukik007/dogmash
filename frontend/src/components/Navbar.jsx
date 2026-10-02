@@ -10,9 +10,7 @@ import Container from "@mui/material/Container";
 import Button from "@mui/material/Button";
 import MenuItem from "@mui/material/MenuItem";
 import { useNavigate } from "react-router-dom";
-import InfoIcon from "@mui/icons-material/Info";
 import HomeIcon from "@mui/icons-material/Home";
-import PetsIcon from "@mui/icons-material/Pets";
 import LeaderboardIcon from "@mui/icons-material/Leaderboard";
 
 const Navbar = () => {
@@ -31,12 +29,6 @@ const Navbar = () => {
     handleCloseNavMenu();
     navigate(`/${des}`);
   };
-  const gotogithub = () => {
-    let win = window.open(
-      "https://github.com/sankalp-srivastava/movies-watchlist"
-    );
-    win.focus();
-  };
 
   return (
     <AppBar position="static" style={{ backgroundColor: "#8C2519" }}>
@@ -50,16 +42,18 @@ const Navbar = () => {
               mr: 2,
               display: { xs: "none", md: "flex" },
               cursor: "pointer",
+              fontWeight: "bold",
+              letterSpacing: "1px",
             }}
             onClick={() => navigate("/")}
           >
-            DOGMASH
+            FACEMASH
           </Typography>
 
           <Box sx={{ flexGrow: 1, display: { xs: "flex", md: "none" } }}>
             <IconButton
               size="large"
-              aria-label="account of current user"
+              aria-label="menu"
               aria-controls="menu-appbar"
               aria-haspopup="true"
               onClick={handleOpenNavMenu}
@@ -88,9 +82,6 @@ const Navbar = () => {
               <MenuItem onClick={() => navbarredirect("")}>
                 <Typography textAlign="center">Home</Typography>
               </MenuItem>
-              <MenuItem onClick={() => navbarredirect("adddog")}>
-                <Typography textAlign="center">Add Dog</Typography>
-              </MenuItem>
               <MenuItem onClick={() => navbarredirect("leaderboard")}>
                 <Typography textAlign="center">Leaderboard</Typography>
               </MenuItem>
@@ -104,10 +95,12 @@ const Navbar = () => {
               flexGrow: 1,
               display: { xs: "flex", md: "none" },
               cursor: "pointer",
+              fontWeight: "bold",
+              letterSpacing: "1px",
             }}
             onClick={() => navigate("/")}
           >
-            DOGMASH
+            FACEMASH
           </Typography>
           <Box
             sx={{
@@ -119,22 +112,16 @@ const Navbar = () => {
           >
             <Button
               onClick={() => navbarredirect("")}
-              sx={{ my: 2, color: "white", display: "block" }}
+              sx={{ my: 2, color: "white", display: "flex", gap: "6px" }}
             >
-              <HomeIcon />
-            </Button>
-            <Button
-              onClick={() => navbarredirect("adddog")}
-              sx={{ my: 2, color: "white", display: "block" }}
-            >
-              <PetsIcon />
+              <HomeIcon /> Home
             </Button>
 
             <Button
               onClick={() => navbarredirect("leaderboard")}
-              sx={{ my: 2, color: "white", display: "block" }}
+              sx={{ my: 2, color: "white", display: "flex", gap: "6px" }}
             >
-              <LeaderboardIcon />
+              <LeaderboardIcon /> Leaderboard
             </Button>
           </Box>
         </Toolbar>

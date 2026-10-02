@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "cd frontend && npm install && npm run build",
     "start": "node backend/server.js"
   },
   "keywords": [],
@@ -14,7 +15,6 @@
     "dotenv": "^16.0.3",
     "elo-rating": "^1.0.1",
     "express": "^4.18.2",
-    "firebase": "^9.12.0",
     "image-thumbnail": "^1.0.15",
     "mongoose": "^6.6.5",
     "multer": "^1.4.5-lts.1",
