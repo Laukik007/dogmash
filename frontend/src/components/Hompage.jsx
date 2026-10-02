@@ -5,10 +5,22 @@ import { useNavigate } from "react-router-dom";
 import LeaderboardIcon from "@mui/icons-material/Leaderboard";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 
-function shuffleArray(array) {
+// Deterministic seeded random number generator (Mulberry32)
+function seededRandom(seed) {
+  return function () {
+    let t = (seed += 0x6d2b79f5);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Seeded shuffle function so queue order is 100% deterministic across reloads
+function seededShuffleArray(array, seedVal) {
   let arr = [...array];
+  let rng = seededRandom(seedVal);
   for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(rng() * (i + 1));
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   return arr;
@@ -16,67 +28,14 @@ function shuffleArray(array) {
 
 const COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
-// Fixed dimensions candidate image component to prevent layout shifts on load/error
-const CandidateImage = ({ url, thumbnail, name }) => {
-  const [hasError, setHasError] = useState(false);
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    setHasError(false);
-    setLoaded(false);
-  }, [url]);
-
-  return (
-    <Box
-      sx={{
-        width: "280px",
-        height: "280px",
-        borderRadius: "12px",
-        overflow: "hidden",
-        backgroundColor: "#e2e8f0",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        margin: "0 auto",
-        boxShadow: "0 4px 14px rgba(0,0,0,0.12)",
-        position: "relative",
-      }}
-    >
-      {!hasError ? (
-        <img
-          src={url || thumbnail}
-          alt={name || "Candidate"}
-          onLoad={() => setLoaded(true)}
-          onError={() => setHasError(true)}
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            display: "block",
-            transition: "opacity 0.2s ease-in-out",
-            opacity: loaded ? 1 : 0.85,
-          }}
-        />
-      ) : (
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "#64748b",
-            textAlign: "center",
-            p: 2,
-          }}
-        >
-          <div style={{ fontSize: "2.5rem", marginBottom: "0.25rem" }}>👤</div>
-          <Typography variant="body2" style={{ fontWeight: 600 }}>
-            {name || "Candidate"}
-          </Typography>
-        </Box>
-      )}
-    </Box>
-  );
+// Get or create persistent device UID for anti-spam tracking
+const getDeviceUid = () => {
+  let uid = localStorage.getItem("facemash_device_uid");
+  if (!uid) {
+    uid = "dev_" + Math.random().toString(36).substring(2) + "_" + Date.now();
+    localStorage.setItem("facemash_device_uid", uid);
+  }
+  return uid;
 };
 
 function Hompage() {
@@ -100,6 +59,7 @@ function Hompage() {
         return true;
       } else {
         localStorage.removeItem("facemash_vote_lock_time");
+        localStorage.removeItem("facemash_pair_index");
         setIsLocked(false);
         return false;
       }
@@ -126,18 +86,30 @@ function Hompage() {
     }
   }, []);
 
-  // Generate all unique 2-candidate combination pairs C(N, 2)
+  // Generate all unique 2-candidate combination pairs C(N, 2) deterministically
   const generatePairsQueue = useCallback((candidates) => {
     if (!candidates || candidates.length < 2) return [];
+
+    // Sort candidates deterministically by ID
+    const sorted = [...candidates].sort((a, b) => a._id.localeCompare(b._id));
     let uniquePairs = [];
 
-    for (let i = 0; i < candidates.length; i++) {
-      for (let j = i + 1; j < candidates.length; j++) {
-        uniquePairs.push([candidates[i], candidates[j]]);
+    for (let i = 0; i < sorted.length; i++) {
+      for (let j = i + 1; j < sorted.length; j++) {
+        uniquePairs.push([sorted[i], sorted[j]]);
       }
     }
 
-    let shuffledPairs = shuffleArray(uniquePairs);
+    // Compute unique deterministic seed for this specific device from deviceUid + candidate IDs
+    const deviceUid = getDeviceUid();
+    const seedString = `${deviceUid}_${sorted.map((c) => c._id).join("")}`;
+    let numericSeed = 42;
+    for (let i = 0; i < seedString.length; i++) {
+      numericSeed = (numericSeed << 5) - numericSeed + seedString.charCodeAt(i);
+      numericSeed |= 0;
+    }
+
+    let shuffledPairs = seededShuffleArray(uniquePairs, Math.abs(numericSeed));
 
     // Reorder to minimize showing the same candidate in consecutive rounds
     let reordered = [];
@@ -167,16 +139,20 @@ function Hompage() {
   const getCandidates = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await axios.post("/list");
+      const res = await axios.post("/list", {}, { headers: { "x-device-uid": getDeviceUid() } });
       const data = res?.data || [];
       if (Array.isArray(data) && data.length >= 2) {
         const queue = generatePairsQueue(data);
         setPairsQueue(queue);
-        setCurrentPairIndex(0);
 
-        // Preload first 2 pairs
-        if (queue.length > 0) preloadPairImages(queue[0]);
-        if (queue.length > 1) preloadPairImages(queue[1]);
+        // Restore saved index progress if returning user, so mobile refresh doesn't restart combinations!
+        const savedIdx = parseInt(localStorage.getItem("facemash_pair_index") || "0", 10);
+        const validIdx = savedIdx < queue.length ? savedIdx : 0;
+        setCurrentPairIndex(validIdx);
+
+        // Preload upcoming pairs
+        if (queue.length > validIdx) preloadPairImages(queue[validIdx]);
+        if (queue.length > validIdx + 1) preloadPairImages(queue[validIdx + 1]);
       }
     } catch (err) {
       console.error("Failed to load candidates:", err);
@@ -204,18 +180,25 @@ function Hompage() {
 
     const winnerId = selectedIndex === 1 ? cand1._id : cand2._id;
 
-    // Send ELO update asynchronously
+    // Send ELO update asynchronously with device UID header
     axios
-      .post("/update", {
-        id1: cand1._id,
-        id2: cand2._id,
-        oldRating1: cand1.Rating,
-        oldRating2: cand2.Rating,
-        winnerId: winnerId,
-      })
+      .post(
+        "/update",
+        {
+          id1: cand1._id,
+          id2: cand2._id,
+          oldRating1: cand1.Rating,
+          oldRating2: cand2.Rating,
+          winnerId: winnerId,
+        },
+        {
+          headers: { "x-device-uid": getDeviceUid() },
+        }
+      )
       .catch((err) => console.error("ELO update error:", err));
 
     const nextIndex = currentPairIndex + 1;
+    localStorage.setItem("facemash_pair_index", nextIndex.toString());
 
     // Check if user finished all unique matchups in queue
     if (nextIndex >= pairsQueue.length) {

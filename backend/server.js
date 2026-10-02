@@ -3,7 +3,7 @@ dotenv.config();
 
 const express = require("express");
 const connectDB = require("./config/db");
-const { VerifyAdmin, GetUserSessions, CreateDog, UpdateDog, getDogs } = require("./controller/dogController");
+const { VerifyAdmin, ResetAllRatings, GetUserSessions, CreateDog, UpdateDog, getDogs } = require("./controller/dogController");
 const path = require("path");
 
 const app = express();
@@ -15,6 +15,7 @@ connectDB();
 
 // API Routes
 app.post("/verify-admin", VerifyAdmin);
+app.post("/admin/reset-ratings", ResetAllRatings);
 app.get("/admin/sessions", GetUserSessions);
 app.post("/create", CreateDog);
 app.post("/update", UpdateDog);

@@ -22,15 +22,16 @@ const getKFactor = (matchesPlayed = 0, rating = 1500) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Anonymous fingerprint: SHA-256 hash of IP + User-Agent (never store raw data)
+// Anonymous fingerprint: SHA-256 hash of (x-device-uid || IP) + User-Agent
 // ─────────────────────────────────────────────────────────────────────────────
 const buildFingerprint = (req) => {
   const ip =
     req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
     req.socket?.remoteAddress ||
     "unknown";
+  const deviceUid = req.headers["x-device-uid"] || "";
   const ua = req.headers["user-agent"] || "unknown";
-  return crypto.createHash("sha256").update(`${ip}::${ua}`).digest("hex");
+  return crypto.createHash("sha256").update(`${deviceUid}::${ip}::${ua}`).digest("hex");
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -46,6 +47,34 @@ const VerifyAdmin = async (req, res) => {
     return res.status(401).json({ success: false, message: "Invalid Admin Password" });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ADMIN: Reset all candidate ratings to 1500 & matchesPlayed to 0
+// ─────────────────────────────────────────────────────────────────────────────
+const ResetAllRatings = async (req, res) => {
+  try {
+    const requiredPassword = process.env.ADMIN_PASSWORD;
+    if (requiredPassword) {
+      const adminPassHeader = req.headers["x-admin-password"];
+      if (adminPassHeader !== requiredPassword) {
+        return res.status(401).json({ success: false, message: "Unauthorized: Invalid Admin Password" });
+      }
+    }
+
+    // Reset all candidate ratings to 1500 and matchesPlayed to 0
+    await dog.updateMany({}, { $set: { Rating: 1500, matchesPlayed: 0 } });
+    
+    // Clear user sessions & vote logs
+    await UserSession.deleteMany({});
+
+    res.status(200).json({
+      success: true,
+      message: "Successfully reset all ratings to 1500 and 0 votes.",
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message || err });
   }
 };
 
@@ -187,6 +216,7 @@ const getDogs = async (req, res) => {
 
 module.exports = {
   VerifyAdmin,
+  ResetAllRatings,
   GetUserSessions,
   CreateDog,
   UpdateDog,

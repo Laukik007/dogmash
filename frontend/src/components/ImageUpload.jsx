@@ -29,6 +29,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import AssessmentIcon from "@mui/icons-material/Assessment";
+import RestartAltIcon from "@mui/icons-material/RestartAlt";
 
 // Helper to convert Blob to Base64 Data URI
 const blobToBase64 = (blob) => {
@@ -62,27 +63,31 @@ const ImageUpload = () => {
   const [passError, setPassError] = useState("");
   const [verifying, setVerifying] = useState(false);
 
-  // Admin Analytics Modal state
-  const [analyticsOpen, setAnalyticsOpen] = useState(false);
-  const [analyticsData, setAnalyticsData] = useState({ sessions: [], candidateMap: {} });
-  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  // Admin Reset Ratings state
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
-  const fetchAnalytics = async () => {
-    setAnalyticsLoading(true);
+  const handleResetAllRatings = async () => {
+    setResetting(true);
+    setErrorMsg("");
+    setSuccessMsg("");
     try {
-      const res = await axios.get("/admin/sessions", {
-        headers: { "x-admin-password": adminPassword },
-      });
+      const res = await axios.post(
+        "/admin/reset-ratings",
+        {},
+        { headers: { "x-admin-password": adminPassword } }
+      );
       if (res.data?.success) {
-        setAnalyticsData({
-          sessions: res.data.sessions || [],
-          candidateMap: res.data.candidateMap || {},
-        });
+        localStorage.removeItem("facemash_pair_index");
+        localStorage.removeItem("facemash_vote_lock_time");
+        setSuccessMsg("All candidate ratings and vote counts have been reset to 1500 & 0!");
+        setResetDialogOpen(false);
       }
     } catch (err) {
-      console.error("Failed to load analytics:", err);
+      console.error("Reset error:", err);
+      setErrorMsg(err.response?.data?.message || "Failed to reset ratings");
     } finally {
-      setAnalyticsLoading(false);
+      setResetting(false);
     }
   };
 
@@ -529,8 +534,8 @@ const ImageUpload = () => {
               </Box>
             )}
 
-            {/* Admin User Tracking Analytics Trigger Button */}
-            <Box sx={{ mt: 4, pt: 2, borderTop: "1px dashed #cbd5e1" }}>
+            {/* Admin User Tracking Analytics & Reset Ratings Action Buttons */}
+            <Box sx={{ mt: 4, pt: 2, borderTop: "1px dashed #cbd5e1", display: "flex", flexDirection: "column", gap: 1.5 }}>
               <Button
                 variant="outlined"
                 startIcon={<AssessmentIcon />}
@@ -542,6 +547,16 @@ const ImageUpload = () => {
                 sx={{ color: "#475569", borderColor: "#cbd5e1", "&:hover": { borderColor: "#94a3b8", backgroundColor: "#f8fafc" } }}
               >
                 View Anonymous User Tracking & Vote Logs
+              </Button>
+
+              <Button
+                variant="outlined"
+                color="error"
+                startIcon={<RestartAltIcon />}
+                onClick={() => setResetDialogOpen(true)}
+                fullWidth
+              >
+                Reset All Ratings to 1500 & 0 Votes
               </Button>
             </Box>
           </Paper>
@@ -612,6 +627,34 @@ const ImageUpload = () => {
           <Button onClick={() => setAnalyticsOpen(false)} variant="contained" style={{ backgroundColor: "#8C2519" }}>
             Close
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Admin Reset Confirmation Dialog */}
+      <Dialog open={resetDialogOpen} onClose={() => setResetDialogOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: "bold", color: "#dc2626" }}>
+          Reset All Candidate Ratings?
+        </DialogTitle>
+        <DialogContent dividers>
+          <Typography variant="body2" color="text.secondary">
+            Are you sure you want to reset all candidate ratings back to <b>1500</b> and set all match/vote counts back to <b>0</b>?
+          </Typography>
+          <Typography variant="caption" color="error" sx={{ display: "block", mt: 1.5, fontWeight: "bold" }}>
+            ⚠️ This will also clear all user voting session logs. This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setResetDialogOpen(false)} color="inherit">
+            Cancel
+          </Button>
+          <LoadingButton
+            loading={resetting}
+            onClick={handleResetAllRatings}
+            variant="contained"
+            color="error"
+          >
+            Confirm Reset
+          </LoadingButton>
         </DialogActions>
       </Dialog>
     </Box>
