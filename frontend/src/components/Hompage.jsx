@@ -238,7 +238,7 @@ function Hompage() {
       <Typography
         variant="subtitle1"
         align="center"
-        sx={{ color: "#000000", fontWeight: 500, mb: 1, fontSize: { xs: "0.95rem", md: "1.1rem" } }}
+        sx={{ color: "#000000", fontWeight: 600, mb: 1, fontSize: { xs: "0.95rem", md: "1.1rem" } }}
       >
         Were we let in for our looks? No. Will we be judged on them? Yes.
       </Typography>
