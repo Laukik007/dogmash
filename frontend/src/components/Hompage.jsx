@@ -38,6 +38,69 @@ const getDeviceUid = () => {
   return uid;
 };
 
+// Fixed dimensions candidate image component to prevent layout shifts on load/error
+const CandidateImage = ({ url, thumbnail, name }) => {
+  const [hasError, setHasError] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    setHasError(false);
+    setLoaded(false);
+  }, [url]);
+
+  return (
+    <Box
+      sx={{
+        width: "280px",
+        height: "280px",
+        borderRadius: "12px",
+        overflow: "hidden",
+        backgroundColor: "#e2e8f0",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        margin: "0 auto",
+        boxShadow: "0 4px 14px rgba(0,0,0,0.12)",
+        position: "relative",
+      }}
+    >
+      {!hasError ? (
+        <img
+          src={url || thumbnail}
+          alt={name || "Candidate"}
+          onLoad={() => setLoaded(true)}
+          onError={() => setHasError(true)}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            display: "block",
+            transition: "opacity 0.2s ease-in-out",
+            opacity: loaded ? 1 : 0.85,
+          }}
+        />
+      ) : (
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#64748b",
+            textAlign: "center",
+            p: 2,
+          }}
+        >
+          <div style={{ fontSize: "2.5rem", marginBottom: "0.25rem" }}>👤</div>
+          <Typography variant="body2" style={{ fontWeight: 600 }}>
+            {name || "Candidate"}
+          </Typography>
+        </Box>
+      )}
+    </Box>
+  );
+};
+
 function Hompage() {
   const navigate = useNavigate();
   const [pairsQueue, setPairsQueue] = useState([]);
