@@ -236,11 +236,18 @@ function Hompage() {
   return (
     <Box sx={{ py: 4, px: 2, minHeight: "85vh", maxWidth: "1200px", margin: "0 auto" }}>
       <Typography
+        variant="subtitle1"
+        align="center"
+        sx={{ color: "#000000", fontWeight: 500, mb: 1, fontSize: { xs: "0.95rem", md: "1.1rem" } }}
+      >
+        Were we let in for our looks? No. Will we be judged on them? Yes.
+      </Typography>
+      <Typography
         variant="h4"
         align="center"
         sx={{ fontWeight: "bold", color: "#8C2519", mb: 4, fontSize: { xs: "1.5rem", md: "2rem" } }}
       >
-        Who's More Attractive? Click to Choose.
+        Who's Hotter? Click to Choose.
       </Typography>
 
       {loading ? (
